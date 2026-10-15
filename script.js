@@ -1,7 +1,11 @@
 const themeButton = document.querySelector('.botao-tema');
+const surpriseButton = document.querySelector('.botao-surpresa');
 const themeStorageKey = 'sobre-mim-theme';
 const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const projectsContainer = document.querySelector('#lista-projetos');
+const card = document.querySelector('.cartao');
+const surpriseStatus = document.querySelector('#surpresa-status');
 const languageColors = {
   'C': '#555555',
   'C#': '#178600',
@@ -64,6 +68,56 @@ themeButton.addEventListener('click', () => {
   saveTheme(nextTheme);
 });
 
+let celebrationTimer;
+let celebrationActive = false;
+
+function getCelebrationTargets() {
+  return document.querySelectorAll('.tecnologias li, .projeto-card');
+}
+
+function animateCelebrationTargets() {
+  getCelebrationTargets().forEach((target) => {
+    target.classList.remove('is-celebrating');
+    void target.offsetWidth;
+    target.classList.add('is-celebrating');
+  });
+}
+
+function createConfetti() {
+  const emojis = ['🎉', '✨', '🎊', '⭐', '🥳', '💜', '🎈', '🌟'];
+  const buttonBounds = surpriseButton.getBoundingClientRect();
+  const cardBounds = card.getBoundingClientRect();
+
+  emojis.forEach((emoji) => {
+    const confetti = document.createElement('span');
+    confetti.className = 'confete';
+    confetti.setAttribute('aria-hidden', 'true');
+    confetti.textContent = emoji;
+    confetti.style.left = `${buttonBounds.left - cardBounds.left + buttonBounds.width / 2}px`;
+    confetti.style.top = `${buttonBounds.top - cardBounds.top + buttonBounds.height / 2}px`;
+    confetti.style.setProperty('--confetti-x', `${Math.round(Math.random() * 160 - 80)}px`);
+    confetti.addEventListener('animationend', () => confetti.remove(), { once: true });
+    card.append(confetti);
+  });
+}
+
+surpriseButton.addEventListener('click', () => {
+  if (prefersReducedMotion) {
+    surpriseStatus.textContent = 'Surpresa! Os efeitos de movimento estão desativados nas preferências do sistema.';
+    return;
+  }
+
+  surpriseStatus.textContent = 'Surpresa ativada!';
+  celebrationActive = true;
+  animateCelebrationTargets();
+  createConfetti();
+  window.clearTimeout(celebrationTimer);
+  celebrationTimer = window.setTimeout(() => {
+    celebrationActive = false;
+    getCelebrationTargets().forEach((target) => target.classList.remove('is-celebrating'));
+  }, 1300);
+});
+
 function createProjectCard(repository) {
   const card = document.createElement('a');
   card.className = 'projeto-card';
@@ -110,6 +164,9 @@ function createProjectCard(repository) {
   language.append(languageDot, languageName);
 
   card.append(header, description, language);
+  if (celebrationActive) {
+    card.classList.add('is-celebrating');
+  }
   return card;
 }
 
